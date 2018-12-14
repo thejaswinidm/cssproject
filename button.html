@@ -1,0 +1,241 @@
+<% content_for :title do %>Placement Companies
+<% end %>
+
+<% ctype_map = {1 => "Normal", 2 => "Core", 3 => "Dream", 4 => "Superdream"} %>
+<%= render "partials/ajax_loader" %>
+<link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+<style>
+  .disabled, .disabled:hover, .disabled:focus {
+    cursor: pointer !important;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 2px;
+    display: inline-block;
+    min-height: 100px;
+    margin: 1rem;
+    width: 35%;
+    font-family: 'Raleway', sans-serif;
+    border-width: 1px;
+    border-color: lightgray;
+    border-top-style: solid;
+  }
+
+  .card-1 {
+    box-shadow: 8px 8px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    transition: all 0.3s cubic-bezier(.25, .8, .25, 1);
+
+  }
+
+  .card-1:hover {
+    box-shadow: 15px 15px 10px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  }
+
+  .main-card {
+    position: fixed !important;
+  }
+
+  .main-card {
+    position: fixed !important;
+  }
+
+  @media (max-width: 1023px) {
+    .hide-0-to-1024 {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hide-1024-up {
+      display: none;
+    }
+  }
+
+</style>
+
+<div class="row" style="margin-left: 1vw;">
+
+  <div class="col-md-5 col-lg-5 col-sm-12 col-xs-12 modal-content " style=" min-height: 50vh; box-shadow: 0 0 0">
+    <div class="col-lg-12 col-md-12 col-xs-12 login-form" id="first_page" style="padding-top: 15px;">
+
+      <div class="row" style="margin:-20px;margin-bottom: 20px; background-color:#404142;color: white; padding: 5px;padding-left: 25px">
+        <h2 style="font-size: 2vh">List of Companies</h2>
+      </div>
+      <% if can? :new_all, Placement::Company %>
+
+        <%= link_to '<i class="fa fa-plus"></i> New Company'.html_safe, new_placement_company_path, :class => "btn btn-primary btn-lg", data: {toggle: "modal", target: "#ajax-modal"}, :remote => true %>
+
+      <% end %>
+
+      <input id="comp_name" class="form-control" placeholder="Search by Company Name"/>
+      <br>
+      <button id="superdream" type="button" class="btn btn-dark  disabled" onclick="sort_table('superdream')">SUPER
+        DREAM
+      </button>
+      <button id="dream" type="button" class="btn btn-dark disabled" onclick="sort_table('dream')">DREAM</button>
+      <button id="core" type="button" class="btn btn-dark disabled" onclick="sort_table('core')">CORE</button>
+      <button id="normal" type="button" class="btn btn-dark disabled" onclick="sort_table('normal')">NORMAL</button>
+      <button id="all" type="button" class="btn btn-dark" onclick="sort_table('ALL')">ALL</button>
+
+      <table class="table table-striped  bulk_action" id="datatable-responsive">
+        <thead>
+        <tr>
+          <th>Company Type</th>
+          <th>Name</th>
+          <th class="hide-0-to-1024">Glance</th>
+          <th>View</th>
+          <% if can? :edit_all, Placement::Company %>
+            <th>Edit</th>
+          <% end %>
+          <% if can? :destroy_all, Placement::Company %>
+            <th>Destroy</th>
+          <% end %>
+        </tr>
+        </thead>
+
+        <tbody>
+        <% @placement_companies.each do |placement_company| %>
+          <tr>
+            <td><%= ctype_map[placement_company.placement_company_type_id] %></td>
+            <td><%= link_to placement_company.name, placement_company %></td>
+            <td class="hide-0-to-1024"><%= link_to "Glance", placement_company, :class => "btn btn-default btn-xs", data: {target: "#ajax-modal"}, :remote => true %></td>
+            <td><%= link_to "View", placement_company, :class => "btn btn-default btn-xs" %></td>
+            <% if can? :edit_all, Placement::Company or placement_company.user_id == current_user.id %>
+              <td><%= link_to 'Edit', edit_placement_company_path(placement_company), :class => "btn btn-primary btn-xs" %></td>
+            <% end %>
+            <% if can? :destroy_all, Placement::Company %>
+              <td><%= link_to 'Destroy', placement_company, method: :delete, data: {confirm: 'Are you sure?'}, :class => "btn btn-primary btn-xs" %></td>
+            <% end %>
+          </tr>
+        <% end %>
+        </tbody>
+        <% if false %>
+          <tfoot>
+          <tr>
+            <th><input type="text" placeholder="Search Type"/></th>
+            <th><input type="text" placeholder="Search Name"/></th>
+            <% if can? :edit_all, Placement::Company or placement_company.user_id == current_user.id %>
+              <th>Edit</th>
+            <% end %>
+            <% if can? :destroy_all, Placement::Company %>
+              <th>Destroy</th>
+            <% end %>
+          </tr>
+          </tfoot>
+        <% end %>
+      </table>
+    </div>
+  </div>
+
+
+  <div class="col-md-7 col-lg-7 col-sm-12 col-xs-12">
+    <div id="company_card" style="margin-left: 15px">
+      <div style="margin-top: 0; position: fixed " class="card card-1">
+
+        <div class="row">
+          <div class="col-sm-9 col-md-9">
+          </div>
+          <div class="col-sm-9 col-md-3">
+            <h2 id="company-type"><b></b></h2>
+          </div>
+        </div>
+        <h1 id="company-name" style="margin-left: 2%; font-size: 50px">Quick Glance Card</h1>
+        <p style="margin-left: 2%; font-size: 20px">Use the <span style="color: darkcyan">'Glance'</span> button to
+          quickly view a company's details here</p>
+        <div style=" margin-top:5%; height: 30% ;background-color:#404142;color: white">
+          <div class="row" style=" padding-left: 2%; padding-top: 2%;word-wrap: break-word;">
+
+            <div class="col-sm-3 col-md-4">
+              <p>Recruitment Date</p>
+              <h2 id="poc-name" style="font-size: 25px"></h2>
+            </div>
+
+            <% if can? :show_all, Placement::Company %>
+              <div class="col-sm-9 col-md-3">
+                <p>POC Phone</p>
+                <h2 id="poc-ph"></h2>
+              </div>
+
+              <div class="col-sm-9 col-md-5">
+                <p>POC Email</p>
+                <h2 id="poc-mail"></h2>
+              </div>
+            <% end %>
+
+            <div class="clearfix"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<%= render partial: "partials/datatables_js" %>
+<%= render 'layouts/modal', :wperc => "40%" %>
+<script>
+    var table;
+    var core = false;
+    var dream = false;
+    var superdream = false;
+    var normal = false;
+    $(document).ready(function () {
+
+        $('#click').click(function (event) {
+            event.preventDefault();
+            $('.container').toggleClass('pushed');
+        });
+
+        var handleDataTableButtons = function () {
+            if ($("#datatable-responsive").length) {
+                table = $("#datatable-responsive").DataTable({
+                    dom: "ilrtilp",
+                    "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                    "oLanguage": {
+                        "sSearch": "<b>Dynamic Search: </b>"
+                    },
+                    responsive: true
+                });
+            }
+        };
+
+        TableManageButtons = function () {
+            "use strict";
+            return {
+                init: function () {
+                    handleDataTableButtons();
+                }
+            };
+        }();
+        TableManageButtons.init();
+    });
+    $("#comp_name").on('keyup change', function () {
+        table.columns(1).search(this.value).draw()
+    });
+
+    function get_cat() {
+        var a = "";
+        return 1 == core && (a += "Core|"), 1 == dream && (a += "Dream|"), 1 == superdream && (a += "Superdream|"), 1 == normal && (a += "Normal|"), a += "foobar", normal || core || dream || superdream ? $("#all").addClass("disabled") : ($("#all").removeClass("disabled"), a = ""), a
+    }
+
+    function sort_table(a) {
+        switch (a) {
+            case"ALL":
+                core = !1, dream = !1, superdream = !1, normal = !1, $("#dream").addClass("disabled").removeClass("btn-info").addClass("btn-dark"), $("#superdream").addClass("disabled").removeClass("btn-info").addClass("btn-dark"), $("#core").addClass("disabled").removeClass("btn-info").addClass("btn-dark"), $("#normal").addClass("disabled").removeClass("btn-info").addClass("btn-dark");
+                break;
+            case"dream":
+                dream = !dream, dream ? $("#dream").removeClass("disabled").removeClass("btn-dark").addClass("btn-info") : $("#dream").addClass("disabled").removeClass("btn-info").addClass("btn-dark");
+                break;
+            case"superdream":
+                superdream = !superdream, superdream ? $("#superdream").removeClass("disabled").removeClass("btn-dark").addClass("btn-info") : $("#superdream").addClass("disabled").removeClass("btn-info").addClass("btn-dark");
+                break;
+            case"core":
+                core = !core, core ? $("#core").removeClass("disabled").removeClass("btn-dark").addClass("btn-info") : $("#core").addClass("disabled").removeClass("btn-info").addClass("btn-dark");
+                break;
+            case"normal":
+                normal = !normal, normal ? $("#normal").removeClass("disabled").removeClass("btn-dark").addClass("btn-info") : $("#normal").addClass("disabled").removeClass("btn-info").addClass("btn-dark");
+        }
+        cat_key = get_cat(), table.columns(0).search(cat_key, !0, !1, !1).draw()
+    }
+</script>
